@@ -1,12 +1,12 @@
 (ns term-extraction.terms
   (:use [term-extraction.adjusts :only [adjust bigrams-and-trigrams terms-and-frequencies]]
-        [term-extraction.corpus  :only [load-phrases-for-cleansing noun-phrases-files]]
+        [term-extraction.corpus  :only [load-phrases-for-cleansing noun-phrases-files plain]]
         [clojure.java.io         :only [file]]
         [clojure.string          :only [join]]))
 
 (def corpus-dir (file "/users/cristoferweber/Documents/mestrado/PLN/Corpus_2"))
 
-(defn tf
+(defn ngram-freq
   [[term grp]]
   (let [freq (->> grp (map second) (reduce +))]
     [term freq]))
@@ -16,17 +16,22 @@
   (partition 2
     (flatten
       (for [f (noun-phrases-files dir)]
-        (-> (adjust (load-phrases-for-cleansing f))
-                    bigrams-and-trigrams
-                    terms-and-frequencies )))))
+        (-> (load-phrases-for-cleansing f)
+            adjust
+            bigrams-and-trigrams
+            terms-and-frequencies )))))
 
 (defn sum-frequency
   [coll]
-  (->> coll
-       (group-by first)
-       (map tf)
-       (sort-by second)
-       reverse))
+  (let [terms-with-freq  (->> coll
+                              (group-by first)
+                              (map ngram-freq)
+                              (group-by second)
+                              (map (fn [[qtty terms]] [qtty (sort terms)]))
+                              (sort-by first)
+                              reverse
+                              (map second))]
+    (plain terms-with-freq)))
 
 (defn process
   [dir]

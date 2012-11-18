@@ -1,12 +1,15 @@
 (ns term-extraction.annotated
-  (:use [clojure.string :only [split split-lines trim]]))
+  (:use [clojure.string :only [split split-lines trim blank?]]))
 
 (defn turn-tags-into-keyword [[word tags]]
   (let [pos-keyword    (comp #(keyword "term-extraction.tags" %) #(apply str %))]
     [word
-      (->> tags
-        (partition 2)
-        (map pos-keyword))]))
+       (if-not (blank? tags)
+         (->> tags
+           (partition 2)
+           (map pos-keyword))
+         [:term-extraction.tags/NONE]
+         )]))
 
 (defn load-annotated-text
   "Retorna as sentenças de um texto anotado em listas, uma por sentença,
